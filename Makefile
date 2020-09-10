@@ -24,16 +24,23 @@ endif
 CC ?= gcc
 CXX ?= g++
 
-COMMON_FLAGS += -O2 -c \
+
+COMMON_FLAGS += -O2 -flto -c \
 	-D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 \
 	-fPIE \
 	-Wformat -Wformat-security -Wno-format-nonliteral \
 	-Wall -Wextra -Werror \
 	-Ikafel/include
 
+ifneq ($(PROTOBUF_STATIC),)
+PROTOBUF_LIBS=-l:libprotobuf.a
+else
+PROTOBUF_LIBS=$(shell pkg-config --libs protobuf)
+endif
+
 CXXFLAGS += $(USER_DEFINES) $(COMMON_FLAGS) $(shell pkg-config --cflags protobuf) \
 	-std=c++11 -fno-exceptions -Wno-unused -Wno-unused-parameter
-LDFLAGS += -pie -Wl,-z,noexecstack -lpthread $(shell pkg-config --libs protobuf)
+LDFLAGS += -pie -Wl,-z,noexecstack -lpthread $(PROTOBUF_LIBS)
 
 BIN = nsjail
 LIBS = kafel/libkafel.a
@@ -50,8 +57,12 @@ endif
 
 NL3_EXISTS := $(shell pkg-config --exists libnl-route-3.0 && echo yes)
 ifeq ($(NL3_EXISTS), yes)
-	CXXFLAGS += $(shell pkg-config --cflags libnl-route-3.0)
+CXXFLAGS += $(shell pkg-config --cflags libnl-route-3.0)
+ifneq ($(NL3_STATIC),)
+	LDFLAGS += -l:libnl-3.a -l:libnl-route-3.a
+else
 	LDFLAGS += $(shell pkg-config --libs libnl-route-3.0)
+endif
 endif
 
 .PHONY: all clean depend indent

@@ -17,4 +17,7 @@ RUN apt-get -y update && apt-get install -y \
 
 COPY . /nsjail
 
-RUN cd /nsjail && make && mv /nsjail/nsjail /bin && rm -rf -- /nsjail
+ARG PROTOBUF_STATIC
+ARG NL3_STATIC
+
+RUN cd /nsjail && make PROTOBUF_STATIC=$PROTOBUF_STATIC NL3_STATIC=$NL3_STATIC && mv /nsjail/nsjail /bin && rm -rf -- /nsjail
