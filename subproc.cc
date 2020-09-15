@@ -370,9 +370,21 @@ int reapProc(nsjconf_t* nsjconf) {
 	return rv;
 }
 
-void killAndReapAll(nsjconf_t* nsjconf) {
+void killAndReapAll(nsjconf_t* nsjconf, int sig) {
 	while (!nsjconf->pids.empty()) {
 		pid_t pid = nsjconf->pids.begin()->first;
+		if (sig == SIGTERM) {
+			if (kill(pid, SIGTERM) == 0) {
+				alarm(5);
+				siginfo_t si;
+				if (waitid(P_PID, pid, &si, WNOWAIT | WEXITED) >= 0) {
+					alarm(0);
+					reapProc(nsjconf, pid, true);
+					continue;
+				}
+				alarm(0);
+			}
+		}
 		if (kill(pid, SIGKILL) == 0) {
 			reapProc(nsjconf, pid, true);
 		} else {
